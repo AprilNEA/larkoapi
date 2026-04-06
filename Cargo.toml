@@ -1,0 +1,23 @@
+[package]
+name = "larkoapi"
+version = "0.1.0"
+edition = "2024"
+description = "Lark/Feishu API client — bot messaging, interactive cards, WebSocket long connection"
+license = "MIT"
+repository = "https://github.com/AprilNEA/larkoapi"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["rustls-tls", "json", "multipart"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["sync", "time", "net", "macros"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+futures-util = "0.3"
+prost = "0.13"
+base64 = "0.22"
+url = "2"
+tracing = "0.1"
+async-trait = "0.1"
+
+[build-dependencies]
+prost-build = "0.13"
