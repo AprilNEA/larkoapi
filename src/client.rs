@@ -94,17 +94,25 @@ impl LarkBotClient {
         Ok(token)
     }
 
-    pub async fn reply_to_chat(&self, chat_id: &str, card: &LarkCard) -> Result<(), String> {
+    /// Send an interactive card message to a recipient.
+    ///
+    /// `receive_id_type` can be `"chat_id"`, `"open_id"`, `"user_id"`, or `"email"`.
+    pub async fn send_message(
+        &self,
+        receive_id: &str,
+        receive_id_type: &str,
+        card: &LarkCard,
+    ) -> Result<(), String> {
         let token = self.get_token().await?;
 
         let payload = json!({
-            "receive_id": chat_id,
+            "receive_id": receive_id,
             "msg_type": "interactive",
             "content": serde_json::to_string(card).unwrap_or_default(),
         });
 
         let url = format!(
-            "{}/open-apis/im/v1/messages?receive_id_type=chat_id",
+            "{}/open-apis/im/v1/messages?receive_id_type={receive_id_type}",
             self.base_url
         );
         let resp = self
@@ -114,7 +122,7 @@ impl LarkBotClient {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| format!("reply request failed: {e}"))?;
+            .map_err(|e| format!("send_message failed: {e}"))?;
 
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
@@ -124,12 +132,22 @@ impl LarkBotClient {
                 serde_json::from_str(&body).unwrap_or(serde_json::Value::Null);
             let code = parsed.get("code").and_then(|v| v.as_i64()).unwrap_or(-1);
             if code != 0 {
-                return Err(format!("reply API returned code {code}: {body}"));
+                return Err(format!("send_message API code {code}: {body}"));
             }
             Ok(())
         } else {
-            Err(format!("reply request returned {status}: {body}"))
+            Err(format!("send_message returned {status}: {body}"))
         }
+    }
+
+    /// Send an interactive card to a chat by chat_id.
+    pub async fn reply_to_chat(&self, chat_id: &str, card: &LarkCard) -> Result<(), String> {
+        self.send_message(chat_id, "chat_id", card).await
+    }
+
+    /// Send an interactive card as a DM to a user by email.
+    pub async fn send_dm(&self, email: &str, card: &LarkCard) -> Result<(), String> {
+        self.send_message(email, "email", card).await
     }
 
     /// Upload an image and return the image_key.
