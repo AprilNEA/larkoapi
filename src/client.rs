@@ -188,4 +188,88 @@ impl LarkBotClient {
             .map(|s| s.to_string())
             .ok_or_else(|| format!("no image_key: {body}"))
     }
+
+    /// Send an interactive card to a chat and return the message_id for later updates.
+    pub async fn send_card_returning_id(
+        &self,
+        chat_id: &str,
+        card: &LarkCard,
+    ) -> Result<String, String> {
+        let token = self.get_token().await?;
+
+        let payload = json!({
+            "receive_id": chat_id,
+            "msg_type": "interactive",
+            "content": serde_json::to_string(card).unwrap_or_default(),
+        });
+
+        let url = format!(
+            "{}/open-apis/im/v1/messages?receive_id_type=chat_id",
+            self.base_url
+        );
+        let resp = self
+            .http
+            .post(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("send_message failed: {e}"))?;
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("send_message parse: {e}"))?;
+
+        let code = body.get("code").and_then(|v| v.as_i64()).unwrap_or(-1);
+        if code != 0 {
+            return Err(format!("send_message API code {code}: {body}"));
+        }
+
+        body.pointer("/data/message_id")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .ok_or_else(|| format!("no message_id in response: {body}"))
+    }
+
+    /// Update an existing interactive card message by message_id.
+    ///
+    /// Uses the Lark PATCH `/open-apis/im/v1/messages/:message_id` API.
+    /// The card must have been sent within the last 14 days.
+    pub async fn update_card(
+        &self,
+        message_id: &str,
+        card: &LarkCard,
+    ) -> Result<(), String> {
+        let token = self.get_token().await?;
+
+        let payload = json!({
+            "content": serde_json::to_string(card).unwrap_or_default(),
+        });
+
+        let url = format!(
+            "{}/open-apis/im/v1/messages/{message_id}",
+            self.base_url
+        );
+        let resp = self
+            .http
+            .patch(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("update_card failed: {e}"))?;
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("update_card parse: {e}"))?;
+
+        let code = body.get("code").and_then(|v| v.as_i64()).unwrap_or(-1);
+        if code != 0 {
+            return Err(format!("update_card API code {code}: {body}"));
+        }
+
+        Ok(())
+    }
 }
