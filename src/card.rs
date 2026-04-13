@@ -41,7 +41,10 @@ impl LarkCard {
     pub fn shared(mut self) -> Self {
         self.config = Some(CardConfig {
             update_multi: Some(true),
-            ..self.config.unwrap_or(CardConfig { update_multi: None, width_mode: None })
+            ..self.config.unwrap_or(CardConfig {
+                update_multi: None,
+                width_mode: None,
+            })
         });
         self
     }
@@ -83,7 +86,10 @@ impl LarkHeader {
     pub fn new(template: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
             template: template.into(),
-            title: LarkTitle { content: content.into(), tag: "plain_text" },
+            title: LarkTitle {
+                content: content.into(),
+                tag: "plain_text",
+            },
         }
     }
 }
@@ -113,7 +119,10 @@ impl MdBlock {
     pub fn new(content: impl Into<String>) -> Self {
         Self {
             tag: "div",
-            text: MdText { tag: "lark_md", content: content.into() },
+            text: MdText {
+                tag: "lark_md",
+                content: content.into(),
+            },
         }
     }
 }
@@ -162,7 +171,10 @@ impl ImageElement {
         Self {
             tag: "img",
             img_key: img_key.into(),
-            alt: PlainText { tag: "plain_text", content: "Image".into() },
+            alt: PlainText {
+                tag: "plain_text",
+                content: "Image".into(),
+            },
             mode: "fit_horizontal",
         }
     }
@@ -210,7 +222,10 @@ pub struct ActionGroup {
 
 impl ActionGroup {
     pub fn new() -> Self {
-        Self { tag: "action", actions: Vec::new() }
+        Self {
+            tag: "action",
+            actions: Vec::new(),
+        }
     }
 
     pub fn button(mut self, text: &str, btn_type: &str, value: Value) -> Self {
@@ -226,7 +241,8 @@ impl ActionGroup {
         title: &str,
         body: &str,
     ) -> Self {
-        self.actions.push(action_btn_confirm(text, btn_type, value, title, body));
+        self.actions
+            .push(action_btn_confirm(text, btn_type, value, title, body));
         self
     }
 }
@@ -300,9 +316,11 @@ impl Column {
 
 impl From<Column> for Value {
     fn from(c: Column) -> Self {
-        let elements: Vec<Value> = c.rows.into_iter().map(|md| {
-            json!({"tag": "div", "text": {"tag": "lark_md", "content": md}})
-        }).collect();
+        let elements: Vec<Value> = c
+            .rows
+            .into_iter()
+            .map(|md| json!({"tag": "div", "text": {"tag": "lark_md", "content": md}}))
+            .collect();
         json!({
             "tag": "column",
             "width": "weighted",

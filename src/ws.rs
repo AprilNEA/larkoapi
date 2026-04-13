@@ -56,10 +56,18 @@ struct ClientConfig {
     ping_interval: u64,
 }
 
-fn default_reconnect_count() -> i64 { 120 }
-fn default_reconnect_interval() -> u64 { 3 }
-fn default_reconnect_nonce() -> u64 { 30 }
-fn default_ping_interval() -> u64 { 120 }
+fn default_reconnect_count() -> i64 {
+    120
+}
+fn default_reconnect_interval() -> u64 {
+    3
+}
+fn default_reconnect_nonce() -> u64 {
+    30
+}
+fn default_ping_interval() -> u64 {
+    120
+}
 
 impl Default for ClientConfig {
     fn default() -> Self {
@@ -89,7 +97,10 @@ pub async fn run_ws_client(
 
     loop {
         if config.reconnect_count >= 0 && attempts > config.reconnect_count {
-            error!("exceeded max reconnect attempts ({})", config.reconnect_count);
+            error!(
+                "exceeded max reconnect attempts ({})",
+                config.reconnect_count
+            );
             return;
         }
 
@@ -174,9 +185,8 @@ async fn get_ws_endpoint(
     Ok((data.url, config))
 }
 
-type WsStream = tokio_tungstenite::WebSocketStream<
-    tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
->;
+type WsStream =
+    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
 async fn ws_message_loop(
     ws_stream: WsStream,
@@ -254,10 +264,8 @@ async fn ws_message_loop(
             }
             (METHOD_DATA, "event") | (METHOD_DATA, "card") => {
                 let message_id = headers.get("message_id").cloned().unwrap_or_default();
-                let sum: usize =
-                    headers.get("sum").and_then(|s| s.parse().ok()).unwrap_or(1);
-                let seq: usize =
-                    headers.get("seq").and_then(|s| s.parse().ok()).unwrap_or(0);
+                let sum: usize = headers.get("sum").and_then(|s| s.parse().ok()).unwrap_or(1);
+                let seq: usize = headers.get("seq").and_then(|s| s.parse().ok()).unwrap_or(0);
 
                 let payload = if sum <= 1 {
                     frame.payload.clone().unwrap_or_default()
@@ -265,7 +273,9 @@ async fn ws_message_loop(
                     let entry = fragments
                         .entry(message_id.clone())
                         .or_insert_with(|| (sum, Vec::new()));
-                    entry.1.push((seq, frame.payload.clone().unwrap_or_default()));
+                    entry
+                        .1
+                        .push((seq, frame.payload.clone().unwrap_or_default()));
 
                     if entry.1.len() >= sum {
                         let mut parts = fragments.remove(&message_id).unwrap().1;
