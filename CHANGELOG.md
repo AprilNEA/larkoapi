@@ -5,6 +5,59 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-04-20
+
+### Added
+
+- **Unofficial Minutes (妙记) web client** behind feature `minutes-unofficial`:
+  - `MinutesWebClient::new(base, cookie, http)` — cookie-authenticated client
+    with automatic `bv-csrf-token` extraction.
+  - `list_page(space, size, cursor)` / `list_all(space, size)` — enumerate
+    the Minutes inbox (pagination by `share_time`).
+  - `get_media_url(object_token)` — resolve the A/V download URL.
+  - `export_subtitle(object_token, opts)` — export transcript as SRT or TXT
+    with optional speaker labels and timestamps.
+  - `session_expires_at()` / `needs_refresh(buffer)` — decode the
+    `sl_session` JWT `exp` claim locally.
+  - `reload_cookie(new)` — swap the cookie after a cron re-harvest.
+  - `with_security_host(host)` / `refresh()` — trigger Lark's
+    compliance-ping heartbeat (`/lark/scs/compliance/ping`), which rotates
+    `sl_session` for another 12 hours without re-harvesting.
+  - `infer_security_host_from_base(base)` — best-effort host derivation for
+    Lark International regional tenants.
+  - Constants `FEISHU_BASE`, `LARK_BASE` for the web hosts.
+  - Types: `MinutesWebRecord`, `MinutesWebPage`, `SpaceName`,
+    `SubtitleFormat`, `SubtitleOptions`.
+  - **Stability note:** these endpoints are undocumented and may break
+    without notice. Reference implementation:
+    <https://github.com/bingsanyu/feishu_minutes>.
+
+### Changed
+
+- `minutes` is now a directory module (`src/minutes/{mod,official,unofficial}.rs`).
+  Public types (`MinuteMeta`) remain at the same path, so nothing downstream
+  needs to change.
+
+## [0.4.0] — 2026-04-20
+
+### Added
+
+- **VC v1** (`vc` module):
+  - `LarkBotClient::get_meeting(meeting_id)` → `MeetingMeta { topic, start_time_ms, end_time_ms, owner_open_id }`
+  - `LarkBotClient::get_recording(meeting_id)` → `RecordingFile { url, duration_ms }`
+  - Scopes: `vc:meeting:readonly`, `vc:record:readonly`.
+- **Minutes v1** (`minutes` module):
+  - `LarkBotClient::get_minute_meta(minute_token)` → `MinuteMeta`
+  - `LarkBotClient::get_minute_media_url(minute_token)` → signed A/V download URL (1-day TTL)
+  - Scopes: `minutes:minutes:readonly`, `minutes:minutes.media:export`.
+- Types re-exported at the crate root: `MeetingMeta`, `RecordingFile`, `MinuteMeta`.
+
+### Changed
+
+- Internal `call(method, path, body)` helper is now `pub(crate)` so sibling
+  modules can layer typed endpoints without re-implementing auth and error
+  handling. No change for external users.
+
 ## [0.3.0] — 2026-04-13
 
 > Note: `0.2.0` was published earlier with only the typed-card builders. This

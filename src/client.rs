@@ -273,7 +273,7 @@ impl LarkBotClient {
 /// These methods share a thin `call` helper that handles token refresh, bearer
 /// auth, HTTP status check, and `code != 0` unwrap into `Err`.
 impl LarkBotClient {
-    async fn call(
+    pub(crate) async fn call(
         &self,
         method: Method,
         path: &str,

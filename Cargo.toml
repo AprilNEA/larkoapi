@@ -1,6 +1,6 @@
 [package]
 name = "larkoapi"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2024"
 description = "Lark/Feishu API client — bot messaging, interactive cards, WebSocket long connection"
 license = "MIT"
@@ -22,6 +22,15 @@ base64 = "0.22"
 url = "2"
 tracing = "0.1"
 async-trait = "0.1"
+
+[features]
+default = []
+# Unofficial Minutes (妙记) web client — uses browser cookies and undocumented
+# endpoints (`meetings.feishu.cn/minutes/api/*`). Fragile; opt-in.
+minutes-unofficial = []
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }
 
 [build-dependencies]
 prost-build = "0.13"
