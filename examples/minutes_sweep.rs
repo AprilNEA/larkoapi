@@ -6,7 +6,7 @@
 //!      vars or shell history.
 //!   2. `LARK_MINUTES_COOKIE` — raw cookie string. Handy for one-off runs.
 //!      Quote with SINGLE quotes in the shell so embedded `"` stay literal:
-//!          export LARK_MINUTES_COOKIE='name="value"; other=x'
+//!      `export LARK_MINUTES_COOKIE='name="value"; other=x'`
 //!
 //! Other env:
 //!   `LARK_MINUTES_BASE`  — `https://meetings.feishu.cn` (default) or

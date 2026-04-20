@@ -145,6 +145,12 @@ impl Hr {
     }
 }
 
+impl Default for Hr {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl From<Hr> for Value {
     fn from(h: Hr) -> Self {
         serde_json::to_value(h).unwrap()
@@ -218,6 +224,12 @@ impl From<NoteElement> for Value {
 pub struct ActionGroup {
     tag: &'static str,
     actions: Vec<Value>,
+}
+
+impl Default for ActionGroup {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ActionGroup {
@@ -301,6 +313,12 @@ impl From<ColumnSet> for Value {
 #[derive(Clone)]
 pub struct Column {
     rows: Vec<String>,
+}
+
+impl Default for Column {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Column {

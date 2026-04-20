@@ -105,7 +105,7 @@ pub async fn run_ws_client(
         }
 
         if attempts > 0 {
-            let delay = config.reconnect_interval.max(1).min(10);
+            let delay = config.reconnect_interval.clamp(1, 10);
             info!("reconnecting in {delay}s (attempt {attempts})");
             tokio::time::sleep(Duration::from_secs(delay)).await;
         }
@@ -188,6 +188,9 @@ async fn get_ws_endpoint(
 type WsStream =
     tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
+/// `message_id -> (total fragment count, collected `(index, bytes)` pairs)`.
+type FragmentCache = HashMap<String, (usize, Vec<(usize, Vec<u8>)>)>;
+
 async fn ws_message_loop(
     ws_stream: WsStream,
     service_id: i32,
@@ -201,8 +204,7 @@ async fn ws_message_loop(
     let ping_interval = Duration::from_secs(config.ping_interval);
     let mut last_ping = Instant::now();
 
-    // Fragment cache: message_id -> (total, collected fragments)
-    let mut fragments: HashMap<String, (usize, Vec<(usize, Vec<u8>)>)> = HashMap::new();
+    let mut fragments: FragmentCache = HashMap::new();
 
     // Dedup: track recent event_ids to skip duplicates
     let mut seen_events: HashMap<String, Instant> = HashMap::new();
@@ -251,15 +253,14 @@ async fn ws_message_loop(
 
         match (frame.method, frame_type) {
             (METHOD_CONTROL, "pong") => {
-                if let Some(ref payload) = frame.payload {
-                    if !payload.is_empty() {
-                        if let Ok(new_config) = serde_json::from_slice::<ClientConfig>(payload) {
-                            info!(
-                                "config updated from pong: ping_interval={}s",
-                                new_config.ping_interval
-                            );
-                        }
-                    }
+                if let Some(ref payload) = frame.payload
+                    && !payload.is_empty()
+                    && let Ok(new_config) = serde_json::from_slice::<ClientConfig>(payload)
+                {
+                    info!(
+                        "config updated from pong: ping_interval={}s",
+                        new_config.ping_interval
+                    );
                 }
             }
             (METHOD_DATA, "event") | (METHOD_DATA, "card") => {
