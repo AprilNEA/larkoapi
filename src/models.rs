@@ -12,6 +12,18 @@ pub struct ChatMember {
     pub tenant_key: String,
 }
 
+/// A group chat the bot is a member of, from `GET /open-apis/im/v1/chats`.
+#[derive(Debug, Deserialize, Clone)]
+pub struct Chat {
+    pub chat_id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub avatar: String,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct DriveFile {
     pub token: String,

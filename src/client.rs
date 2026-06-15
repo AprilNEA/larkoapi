@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 use tracing::info;
 
 use crate::card::LarkCard;
-use crate::models::{ChatMember, DriveFile};
+use crate::models::{Chat, ChatMember, DriveFile};
 
 pub struct LarkBotClient {
     app_id: String,
@@ -319,6 +319,38 @@ impl LarkBotClient {
                 for item in items {
                     if let Ok(m) = serde_json::from_value::<ChatMember>(item.clone()) {
                         out.push(m);
+                    }
+                }
+            }
+            let next = resp
+                .pointer("/data/page_token")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            if next.is_empty() {
+                break;
+            }
+            page_token = next;
+        }
+        Ok(out)
+    }
+
+    /// List the group chats the bot is a member of (`GET /open-apis/im/v1/chats`),
+    /// following pagination.
+    pub async fn list_chats(&self) -> Result<Vec<Chat>, String> {
+        let mut out = Vec::new();
+        let mut page_token = String::new();
+        loop {
+            let path = if page_token.is_empty() {
+                "/open-apis/im/v1/chats?page_size=100".to_string()
+            } else {
+                format!("/open-apis/im/v1/chats?page_size=100&page_token={page_token}")
+            };
+            let resp = self.call(Method::GET, &path, None).await?;
+            if let Some(items) = resp.pointer("/data/items").and_then(|v| v.as_array()) {
+                for item in items {
+                    if let Ok(c) = serde_json::from_value::<Chat>(item.clone()) {
+                        out.push(c);
                     }
                 }
             }
