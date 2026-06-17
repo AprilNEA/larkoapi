@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 use tracing::info;
 
 use crate::card::LarkCard;
-use crate::models::{Chat, ChatMember, DriveFile};
+use crate::models::{Chat, ChatMember, DriveFile, User};
 
 pub struct LarkBotClient {
     app_id: String,
@@ -149,6 +149,16 @@ impl LarkBotClient {
     /// Send an interactive card as a DM to a user by email.
     pub async fn send_dm(&self, email: &str, card: &LarkCard) -> Result<(), String> {
         self.send_message(email, "email", card).await
+    }
+
+    /// Send an interactive card as a DM to a user by their `open_id`.
+    ///
+    /// Unlike [`send_dm`](Self::send_dm) (which addresses by email), this targets
+    /// the app-scoped `open_id` carried by [`User`]/[`ChatMember`] — so it needs no
+    /// contact-directory scope and works for any user the bot already shares a chat
+    /// with (see [`list_users`](Self::list_users)).
+    pub async fn send_dm_by_open_id(&self, open_id: &str, card: &LarkCard) -> Result<(), String> {
+        self.send_message(open_id, "open_id", card).await
     }
 
     /// Upload an image and return the image_key.
@@ -363,6 +373,36 @@ impl LarkBotClient {
                 break;
             }
             page_token = next;
+        }
+        Ok(out)
+    }
+
+    /// List the distinct users the bot can reach: the deduplicated union of the
+    /// members of every chat the bot belongs to (`open_id` + display name),
+    /// excluding the bot itself.
+    ///
+    /// This answers "who can I DM?" without any contact-directory scope — each
+    /// returned [`User`] can be messaged with
+    /// [`send_dm_by_open_id`](Self::send_dm_by_open_id). It only covers users who
+    /// share a chat with the bot; a tenant-wide directory needs the contact API.
+    /// Costs one `list_chats` plus one `list_chat_members` per chat.
+    pub async fn list_users(&self) -> Result<Vec<User>, String> {
+        // Best-effort: if the bot's own id can't be fetched, it just isn't filtered out.
+        let bot_id = self.bot_open_id().await.unwrap_or_default();
+        let mut seen = std::collections::HashSet::new();
+        let mut out = Vec::new();
+        for chat in self.list_chats().await? {
+            for member in self.list_chat_members(&chat.chat_id).await? {
+                if member.member_id.is_empty() || member.member_id == bot_id {
+                    continue;
+                }
+                if seen.insert(member.member_id.clone()) {
+                    out.push(User {
+                        open_id: member.member_id,
+                        name: member.name,
+                    });
+                }
+            }
         }
         Ok(out)
     }

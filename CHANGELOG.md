@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] — 2026-06-17
+
+### Added
+
+- `LarkBotClient::send_dm_by_open_id(open_id, card)` — DM a user by their
+  app-scoped `open_id` instead of by email. A thin wrapper over the
+  `im/v1/messages` endpoint with `receive_id_type=open_id`; needs no contact
+  scope.
+- `LarkBotClient::list_users()` → `Vec<User>` — the distinct users the bot can
+  reach: the deduplicated union of members across every chat the bot belongs to
+  (`open_id` + display name), excluding the bot itself. Pairs with
+  `send_dm_by_open_id` to enumerate-then-DM without a contact-directory scope.
+- `User { open_id, name }` model (re-exported at the crate root).
+
+## [0.5.1] — 2026-06-15
+
+### Added
+
+- `LarkBotClient::list_chats()` → `Vec<Chat>` — list the group chats the bot
+  belongs to (paginated). `Chat` model re-exported at the crate root.
+
 ## [0.5.0] — 2026-04-20
 
 ### Added

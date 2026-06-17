@@ -12,6 +12,16 @@ pub struct ChatMember {
     pub tenant_key: String,
 }
 
+/// A user the bot can reach, from [`LarkBotClient::list_users`](crate::LarkBotClient::list_users):
+/// a deduplicated chat member, addressable as a DM by its `open_id`.
+#[derive(Debug, Clone)]
+pub struct User {
+    /// The user's app-scoped `open_id` (use as the DM `receive_id`).
+    pub open_id: String,
+    /// The user's display name.
+    pub name: String,
+}
+
 /// A group chat the bot is a member of, from `GET /open-apis/im/v1/chats`.
 #[derive(Debug, Deserialize, Clone)]
 pub struct Chat {
